@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import '../App.css';
 import logo from '../assets/images/m_logo.jpeg';
 import bgImage from '../assets/images/mentor-details-back.jpg';
-import docimg from '../assets/images/doctor.jpeg';
+import { registerPatient, loginPatient } from '../apiService'; // Adjust path as needed
 
 const PatientFirst = () => {
     const [showNewForm, setShowNewForm] = useState(false);
@@ -10,20 +10,20 @@ const PatientFirst = () => {
     const newHoverRef = useRef(null);
     const oldHoverRef = useRef(null);
 
-    // New Patient Fields
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
     const [gender, setGender] = useState('');
-    const [condition, setCondition] = useState('');
     const [age, setAge] = useState('');
+    const [condition, setCondition] = useState('');
+    const [mailid, setMailid] = useState('');
+    const [password, setPassword] = useState('');
+    const [maritalStatus, setMaritalStatus] = useState('');
+    const [children, setChildren] = useState('');
     const [symptoms, setSymptoms] = useState('');
 
-    // Old Patient Login Fields
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     const handleMouseEnterNew = () => {
         clearTimeout(newHoverRef.current);
@@ -45,94 +45,77 @@ const PatientFirst = () => {
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        setIsRegistering(true);
+
         const newPatient = {
-            firstName, lastName, email, phone, password, gender, condition, age, symptoms,
+            name,
+            gender,
+            age: age ? Number(age) : 0,
+            condition,
+            mailid,
+            password,
+            maritalStatus,
+            children: children ? Number(children) : 0,
+            symptoms: symptoms.split(',').map(s => s.trim()).filter(s => s),
         };
 
         try {
-            const response = await fetch('http://localhost:5000/api/patients', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newPatient),
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                alert('Patient registered successfully!');
-                setFirstName('');
-                setLastName('');
-                setEmail('');
-                setPhone('');
-                setPassword('');
-                setGender('');
-                setCondition('');
-                setAge('');
-                setSymptoms('');
-            } else {
-                alert(data.error || 'Error registering patient');
-            }
+            await registerPatient(newPatient);
+            alert('Patient registered successfully!');
+            setShowNewForm(false);
+            setName('');
+            setGender('');
+            setAge('');
+            setCondition('');
+            setMailid('');
+            setPassword('');
+            setMaritalStatus('');
+            setChildren('');
+            setSymptoms('');
         } catch (error) {
-            console.error('Error:', error);
-            alert('Failed to connect to the server.');
+            alert(error.message);
+        } finally {
+            setIsRegistering(false);
         }
     };
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setIsLoggingIn(true);
+    
         try {
-            const response = await fetch('http://localhost:5000/api/patients/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: loginEmail, password: loginPassword }),
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                alert('Login successful!');
-                // Redirect or next step
-            } else {
-                alert(data.error || 'Invalid credentials');
-            }
+            await loginPatient({ mailid: loginEmail, password: loginPassword });
+            alert('Login successful!');
+            navigate('/dashboard'); // Redirect to the Dashboard page
         } catch (error) {
-            console.error('Login error:', error);
-            alert('Login failed.');
+            console.error('Login error:', error); // Log the error
+            alert('Failed to login, please try again.');
+        } finally {
+            setIsLoggingIn(false);
         }
     };
+    
 
     return (
         <div className='p_1'>
             <img src={logo} alt="logo" className='m_logo' />
             <div className='vertical-line'></div>
             <div className='center-buttons'>
-                {/* New Patient Button */}
-                <button
-                    className='btn'
-                    onMouseEnter={handleMouseEnterNew}
-                    onMouseLeave={handleMouseLeaveNew}
-                >
+                <button className='btn' onMouseEnter={handleMouseEnterNew} onMouseLeave={handleMouseLeaveNew}>
                     New Patient
                 </button>
                 {showNewForm && (
-                    <div className='hover-bridge' onMouseEnter={handleMouseEnterNew} onMouseLeave={handleMouseLeaveNew}></div>
+                    <div className='hover-bridge' onMouseEnter={handleMouseEnterNew} onMouseLeave={handleMouseLeaveNew} />
                 )}
-
-                {/* Old Patient Button */}
-                <button
-                    className='btn'
-                    onMouseEnter={handleMouseEnterOld}
-                    onMouseLeave={handleMouseLeaveOld}
-                >
+                <button className='btn' onMouseEnter={handleMouseEnterOld} onMouseLeave={handleMouseLeaveOld}>
                     Old Patient
                 </button>
                 {showOldForm && (
-                    <div className='hover-bridge left-hover' onMouseEnter={handleMouseEnterOld} onMouseLeave={handleMouseLeaveOld}></div>
+                    <div className='hover-bridge left-hover' onMouseEnter={handleMouseEnterOld} onMouseLeave={handleMouseLeaveOld} />
                 )}
-
-
                 <img src={bgImage} alt="background" className='background-image' />
             </div>
 
-            {/* New Patient Form */}
             {showNewForm && (
                 <div className='form-container' onMouseEnter={handleMouseEnterNew} onMouseLeave={handleMouseLeaveNew}>
                     <div className="container">
@@ -140,24 +123,25 @@ const PatientFirst = () => {
                         <div className="content">
                             <form onSubmit={handleRegister}>
                                 <div className="user-details">
-                                    <div className="input-box"><span className="details">First Name</span><input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
-                                    <div className="input-box"><span className="details">Last Name</span><input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
-                                    <div className="input-box"><span className="details">Email</span><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                                    <div className="input-box"><span className="details">Phone Number</span><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required /></div>
-                                    <div className="input-box"><span className="details">Password</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">Full Name</span><input type="text" value={name} onChange={(e) => setName(e.target.value)} required /></div>
                                     <div className="input-box"><span className="details">Gender</span><input type="text" value={gender} onChange={(e) => setGender(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">Age</span><input type="number" value={age} onChange={(e) => setAge(e.target.value)} required /></div>
                                     <div className="input-box"><span className="details">Condition</span><input type="text" value={condition} onChange={(e) => setCondition(e.target.value)} required /></div>
-                                    <div className="input-box"><span className="details">Age</span><input type="text" value={age} onChange={(e) => setAge(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">Email</span><input type="email" value={mailid} onChange={(e) => setMailid(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">Password</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">Marital Status</span><input type="text" value={maritalStatus} onChange={(e) => setMaritalStatus(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">No of Children</span><input type="number" value={children} onChange={(e) => setChildren(e.target.value)} required /></div>
                                     <div className="input-box"><span className="details">Symptoms</span><input type="text" value={symptoms} onChange={(e) => setSymptoms(e.target.value)} required /></div>
                                 </div>
-                                <div className="button"><input type="submit" value="Register" /></div>
+                                <div className="button">
+                                    <input type="submit" value={isRegistering ? 'Registering...' : 'Register'} disabled={isRegistering} />
+                                </div>
                             </form>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Old Patient Login Form */}
             {showOldForm && (
                 <div className='form-container old-patient-form' onMouseEnter={handleMouseEnterOld} onMouseLeave={handleMouseLeaveOld}>
                     <div className="old-patient-container">
@@ -165,21 +149,15 @@ const PatientFirst = () => {
                         <div className="content">
                             <form onSubmit={handleLogin}>
                                 <div className="user-details">
-                                    <div className="input-box">
-                                        <span className="details">Email</span>
-                                        <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                                    </div>
-                                    <div className="input-box">
-                                        <span className="details">Password</span>
-                                        <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
-                                    </div>
+                                    <div className="input-box"><span className="details">Email</span><input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required /></div>
+                                    <div className="input-box"><span className="details">Password</span><input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required /></div>
                                 </div>
-                                <div className="button"><input type="submit" value="Login" /></div>
+                                <div className="button">
+                                    <input type="submit" value={isLoggingIn ? 'Logging in...' : 'Login'} disabled={isLoggingIn} />
+
+                                </div>
                             </form>
                         </div>
-                        {/* <div className="image-section">
-                            <img src={docimg} alt="Doctor Illustration" />
-                        </div> */}
                     </div>
                 </div>
             )}

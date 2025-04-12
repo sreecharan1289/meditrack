@@ -373,3 +373,241 @@ form .button input:hover {
   border-radius: 5px;
   background: linear-gradient(135deg, #71b7e6, #9b59b6);
 }
+.dashmain {
+  height: 100vh;
+}
+
+.divgrid {
+  display: grid;
+  grid-template-rows: 40vh 40vh;
+  grid-template-columns: 45vw 45vw;
+  margin: 3vh 4vw;
+  gap: 1vw;
+}
+
+.grid-item {
+  background-color: white;
+  border-radius: 5px;
+  padding: 2vh 2vw;
+  display: grid;
+  grid-template-rows: 12vh 12vh 12vh;
+}
+
+.in-grid-item {
+  background-color: white;
+  border-radius: 3px;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  font-weight: 700;
+  gap: 10px;
+  padding: 2vh;
+}
+
+.i1 {
+  border-bottom: 1px solid #d9ebec;
+}
+
+.i2 {
+  border-bottom: 1px solid #d9ebec;
+}
+
+.colorhead {
+  color: #649cac;
+}
+
+.normalhead {
+  color: black;
+}
+
+.namehead {
+  display: flex;
+  justify-content: start;
+  gap: 5px;
+  margin: 3vh 3vw;
+}
+
+.todaypatientlistdash ul {
+  list-style: none;
+  overflow-y: auto;
+  max-height: 30vh;
+  border-radius: 5px;
+  border: 1px solid #ccece8;
+}
+
+.today-patient-item {
+  padding: 2vh 3vh;
+  background-color: white;
+  border-bottom: 1px solid #d9ebec;
+  transition: 0.2s ease-in-out;
+}
+
+.today-patient-item:hover {
+  cursor: pointer;
+  background-color: #ccece8;
+}
+
+.newpatientslist ul {
+  list-style: none;
+  overflow-y: auto;
+  max-height: 30vh;
+  border-radius: 5px;
+  border: 1px solid #ccece8;
+}
+
+.dashheading {
+  color: #649cac;
+}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 96.1%;
+  height: 90px; /* Adjust navbar height */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  background-color: #649cac; /* Default navbar color */
+  border-radius: 5px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+
+.m_logo:hover {
+  transform: scale(1.05);
+}
+
+.nav-links {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.navlist {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+}
+
+.nav-item {
+  padding: 10px 15px;
+  border-radius: 5px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #f0f8ff;
+}
+
+.nav-item.active::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #ffffff;
+  transition: width 0.3s ease-in-out;
+}
+.dashboard-container {
+  background-color: #F3FFFF;
+  width: 100vw;
+  min-height: 87vh;
+  padding-top: 90px;
+}
+
+.dashboard-content {
+  padding: 30px;
+  text-align: center;
+}
+
+.dashboard-content h1 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.dashboard-content p {
+  font-size: 1.1rem;
+  color: #666;
+}
+.appointment-heading {
+  margin-top: 3rem;
+  font-size: 1.8rem;
+  color: #333;
+}
+
+.appointment-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.appointment-tile {
+  background-color: #ffffff;
+  padding: 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  width: 300px;
+  text-align: center;
+}
+
+.appointment-tile h3 {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.appointment-tile p {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.appointment-tile input[type="date"] {
+  padding: 0.4rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.appointment-tile button {
+  padding: 0.5rem 1rem;
+  background-color: #649cac;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.appointment-tile button:hover {
+  background-color: #507b8c;
+}
+.left-aligned-heading {
+  text-align: left;
+  margin-left: 20px; /* optional, for spacing */
+}
