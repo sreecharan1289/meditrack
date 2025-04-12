@@ -10,6 +10,7 @@ const patientSchema = new mongoose.Schema({
   condition: String,
   age: Number,
   symptoms: String,
+  children:{type:String, required:true}
 });
 
 module.exports = mongoose.model('Patient', patientSchema);
