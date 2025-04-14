@@ -3,8 +3,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../assets/images/m_logo.jpeg';
-import Dashboard from './Dashboardpatient';
-
 
 const NavbarPatient = ({ navbarColor, logoUrl }) => {
   const location = useLocation(); // Get current path
@@ -17,14 +15,19 @@ const NavbarPatient = ({ navbarColor, logoUrl }) => {
       <div className="nav-links">
         <ul className="navlist">
           <li
-            className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}
+            className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
           >
-            <Link to="/" className="nav-link">Dashboard</Link>
+            <Link to="/dashboard" className="nav-link">Dashboard</Link>
           </li>
           <li
-            className={`nav-item ${location.pathname === '/appointments' ? 'active' : ''}`}
+            className={`nav-item ${location.pathname === '/appointmentspatient' ? 'active' : ''}`}
           >
-            <Link to="/appointments" className="nav-link">Appointments</Link>
+            <Link to="/appointmentspatient" className="nav-link">Appointments</Link>
+          </li>
+          <li
+            className={`nav-item ${location.pathname === '/feedback' ? 'active' : ''}`}
+          >
+            <Link to="/feedback" className="nav-link">Feedback</Link>
           </li>
           <li
             className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}

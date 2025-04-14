@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Appointment = require("../models/appointment");
-const Patient = require("../models/patient"); 
+const Patient = require("../models/patient");
+
 // Create appointment
 router.post("/", async (req, res) => {
     try {
@@ -32,7 +33,6 @@ router.get("/patient/:patientId", async (req, res) => {
         res.status(500).json({ message: "Error fetching appointments", error: err.message });
     }
 });
-// make sure this is imported
 
 // 1️⃣ Get all patients with active appointments for a doctor
 router.get("/active/doctor/:doctorId", async (req, res) => {
@@ -53,6 +53,35 @@ router.get("/active/doctor/:doctorId", async (req, res) => {
       });
     }
   });
+  // Create a new appointment
+router.post('/add', async (req, res) => {
+    try {
+      const { patient, doctor, currentAppointmentDate } = req.body;
+  
+      const newAppointment = new Appointment({
+        patient,
+        doctor,
+        currentAppointmentDate,
+      });
+  
+      const savedAppointment = await newAppointment.save();
+      res.status(201).json(savedAppointment);
+    } catch (err) {
+      console.error('Error saving appointment:', err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
+  // Get appointments by patient ID
+router.get('/patient/:patientId', async (req, res) => {
+    try {
+      const appointments = await Appointment.find({ patient: req.params.patientId });
+      res.json(appointments);
+    } catch (err) {
+      console.error('❌ Error fetching appointments:', err.message);
+      res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+  });
 
 // 2️⃣ Get appointments where isActive=true AND isReportGenerated=false
 router.get("/pending-reports", async (req, res) => {
@@ -67,4 +96,6 @@ router.get("/pending-reports", async (req, res) => {
         res.status(500).json({ message: "Error fetching pending report appointments", error: err.message });
     }
 });
+
 module.exports = router;
+module.exports.Appointment = Appointment;

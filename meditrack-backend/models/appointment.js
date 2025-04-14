@@ -1,9 +1,13 @@
+const express = require('express');
 const mongoose = require("mongoose");
 const Patient = require("./patient");
 const Doctor = require("./doctor");
+const router = express.Router();
+
+// Appointment Schema
 const appointmentSchema = new mongoose.Schema({
-  patientName: { type: String },
-  doctorName: { type: String },
+  patientName: { type: String, default: null },
+  doctorName: { type: String, default: null },
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patient",
@@ -16,6 +20,7 @@ const appointmentSchema = new mongoose.Schema({
   },
   lastAppointmentDate: {
     type: Date,
+    default: null
   },
   currentAppointmentDate: {
     type: Date,
@@ -23,18 +28,20 @@ const appointmentSchema = new mongoose.Schema({
   },
   nextAppointmentDate: {
     type: Date,
+    default: null
   },
   report: {
-    type: String, // can be a summary or file reference
+    type: String,
+    default: null
   },
   notes: {
     type: String,
+    default: null
   },
   isActive: {
     type: Boolean,
-    default: true, // true means upcoming/in-progress
+    default: true,
   },
-
   isReportGenerated: {
     type: Boolean,
     default: false,
@@ -46,24 +53,7 @@ const appointmentSchema = new mongoose.Schema({
 });
 
 
-appointmentSchema.post("save", async function (doc, next) {
-  try {
-    const appointmentEntry = {
-      date: doc.currentAppointmentDate,
-      status: doc.isActive ? "upcoming" : "past",
-      appointmentId: doc._id
-    };
 
-    await Patient.findByIdAndUpdate(doc.patient, {
-      $push: { appointments: appointmentEntry }
-    });
-
-    next();
-  } catch (err) {
-    console.error("❌ Error updating patient's appointment list:", err.message);
-    next(err);
-  }
-});
 // 🧠 Middleware to auto-fill doctorName and patientName
 appointmentSchema.pre("save", async function (next) {
   if (!this.isModified("doctor") && !this.isModified("patient")) {
@@ -83,4 +73,50 @@ appointmentSchema.pre("save", async function (next) {
     next(err);
   }
 });
-module.exports = mongoose.model("Appointment", appointmentSchema);
+
+// Add new appointment to patient's appointment list & set activeAppointment
+appointmentSchema.post("save", async function (doc, next) {
+  try {
+    const appointmentEntry = {
+      date: doc.currentAppointmentDate,
+      status: doc.isActive ? "upcoming" : "past",
+      appointmentId: doc._id
+    };
+
+    await Patient.findByIdAndUpdate(doc.patient, {
+      $push: { appointments: appointmentEntry },
+      $set: { activeAppointment: doc._id }
+    });
+
+    next();
+  } catch (err) {
+    console.error("❌ Error updating patient's appointment list:", err.message);
+    next(err);
+  }
+});
+
+// Clear activeAppointment if appointment becomes inactive
+appointmentSchema.post("save", async function (doc, next) {
+  try {
+    if (!doc.isActive) {
+      const patient = await Patient.findById(doc.patient);
+  
+      console.log("Checking if activeAppointment should be cleared");
+  
+      if (patient && patient.activeAppointment?.toString() === doc._id.toString()) {
+        patient.activeAppointment = null;
+        await patient.save();
+        console.log("✅ Cleared activeAppointment for patient", patient._id);
+      }
+    }
+
+    next();
+  } catch (err) {
+    console.error("❌ Error clearing activeAppointment:", err.message);
+    next(err);
+  }
+});
+
+// Export Appointment model and router
+const Appointment = mongoose.model("Appointment", appointmentSchema);
+module.exports = Appointment;

@@ -1,6 +1,10 @@
 const express = require("express");
 const Patient = require("../models/patient");
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
+
+const SECRET_KEY = process.env.JWT_SECRET || 'yourSecretKey';
 
 // Create a new patient
 router.post("/add", async (req, res) => {
@@ -12,20 +16,21 @@ router.post("/add", async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
-//login
-router.post('/login', async (req, res) => {
+
+// Login
+router.post("/login", async (req, res) => {
   const { mailid, password } = req.body;
 
   try {
-      const patient = await Patient.findOne({ mailid });
-      if (!patient || patient.password !== password) {
-          return res.status(401).json({ error: 'Invalid credentials' });
-      }
+    const patient = await Patient.findOne({ mailid });
+    if (!patient || !(await bcrypt.compare(password, patient.password))) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
 
-      res.status(200).json({ message: 'Login successful', patient });
+    const token = jwt.sign({ id: patient._id, mailid: patient.mailid }, SECRET_KEY, { expiresIn: "1h" });
+    res.status(200).json({ message: "Login successful", token, patient });
   } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -35,39 +40,35 @@ router.get("/", async (req, res) => {
   res.json(patients);
 });
 
-// ✅ API to add multiple patients and return only their IDs
+// Add multiple patients
 router.post("/add-multiple", async (req, res) => {
-    try {
-        const patients = req.body; // Expecting an array of patients
+  try {
+    const patients = req.body;
 
-        if (!Array.isArray(patients) || patients.length === 0) {
-            return res.status(400).json({ message: "Invalid input: Expected an array of patients" });
-        }
-
-        // Insert multiple patients at once
-        const newPatients = await Patient.insertMany(patients);
-
-        // Extract only the patient IDs
-        const patientIds = newPatients.map(patient => patient._id);
-
-        res.status(201).json({
-            message: `${newPatients.length} patients added successfully`,
-            patientIds: patientIds
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Error adding patients", error: error.message });
+    if (!Array.isArray(patients) || patients.length === 0) {
+      return res.status(400).json({ message: "Invalid input: Expected an array of patients" });
     }
+
+    const newPatients = await Patient.insertMany(patients);
+    const patientIds = newPatients.map(patient => patient._id);
+
+    res.status(201).json({
+      message: `${newPatients.length} patients added successfully`,
+      patientIds
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error adding patients", error: error.message });
+  }
 });
-// Get patient by ID
+
+// 🔽 Move this route LAST
 router.get("/:id", async (req, res) => {
   console.log("Fetching patient with ID:", req.params.id);
   try {
     const patient = await Patient.findById(req.params.id).populate("doctor");
-    
     if (!patient) {
       return res.status(404).json({ message: "Patient not found" });
     }
-
     res.json(patient);
   } catch (error) {
     res.status(500).json({ message: "Error retrieving patient", error: error.message });

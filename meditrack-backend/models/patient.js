@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Doctor = require("./doctor");
+const bcrypt = require('bcrypt');
 
 const patientSchema = new mongoose.Schema({
   name: { type: String, default: null },
@@ -24,7 +25,7 @@ const patientSchema = new mongoose.Schema({
 
   isNew: {
     type: Boolean,
-    default: false
+    default: true
   },
 
   appointments: [
@@ -48,7 +49,12 @@ const patientSchema = new mongoose.Schema({
       name: { type: String, default: null },
       url: { type: String, default: null }
     }
-  ]
+  ],
+  activeAppointment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Appointment",
+    default: null
+  }
 }, { timestamps: true });
 
 // Automatically add patient ID to doctor's patients[] on save
@@ -65,5 +71,18 @@ patientSchema.post("save", async function (doc, next) {
     next(err);
   }
 });
+
+//bycrypt password before saving
+patientSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 module.exports = mongoose.model("Patient", patientSchema);

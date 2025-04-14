@@ -2,9 +2,13 @@ import React, { useState, useRef } from 'react';
 import '../App.css';
 import logo from '../assets/images/m_logo.jpeg';
 import bgImage from '../assets/images/mentor-details-back.jpg';
-import { registerPatient, loginPatient } from '../apiService'; // Adjust path as needed
+import { registerPatient, loginPatient } from '../apiService';
+import { useNavigate } from 'react-router-dom';
+ // Adjust path as needed
 
-const PatientFirst = () => {
+ 
+ const PatientFirst = () => {
+    const navigate = useNavigate();
     const [showNewForm, setShowNewForm] = useState(false);
     const [showOldForm, setShowOldForm] = useState(false);
     const newHoverRef = useRef(null);
@@ -82,18 +86,23 @@ const PatientFirst = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoggingIn(true);
-    
+      
         try {
-            await loginPatient({ mailid: loginEmail, password: loginPassword });
-            alert('Login successful!');
-            navigate('/dashboard'); // Redirect to the Dashboard page
+          const response = await loginPatient({ mailid: loginEmail, password: loginPassword });
+      
+          // Save token securely (localStorage or cookies)
+          localStorage.setItem('patientToken', response.token);
+          localStorage.setItem('patientInfo', JSON.stringify(response.patient));
+      
+          navigate('/dashboard');
         } catch (error) {
-            console.error('Login error:', error); // Log the error
-            alert('Failed to login, please try again.');
+          console.error('Login error:', error);
+          alert('Failed to login, please try again.');
         } finally {
-            setIsLoggingIn(false);
+          setIsLoggingIn(false);
         }
-    };
+      };
+      
     
 
     return (
