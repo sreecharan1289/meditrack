@@ -1,38 +1,39 @@
-import '../App.css'
+import '../App.css';
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logo from '../assets/images/m_logo.jpeg';
+import { logoutPatient } from '../apiService';
 
 const NavbarPatient = ({ navbarColor, logoUrl }) => {
-  const location = useLocation(); // Get current path
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logoutPatient();
+    navigate('/'); // Redirect to login page
+  };
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" >
       <div className="logo-container">
-        <img className="m_logo" src={logo} alt="Logo" />
+        <img className="m_logo" src={logoUrl || logo} alt="Logo" />
       </div>
       <div className="nav-links">
         <ul className="navlist">
-          <li
-            className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}
-          >
+          <li className={`nav-item ${location.pathname === '/dashboard' ? 'active' : ''}`}>
             <Link to="/dashboard" className="nav-link">Dashboard</Link>
           </li>
-          <li
-            className={`nav-item ${location.pathname === '/appointmentspatient' ? 'active' : ''}`}
-          >
+          <li className={`nav-item ${location.pathname === '/appointmentspatient' ? 'active' : ''}`}>
             <Link to="/appointmentspatient" className="nav-link">Appointments</Link>
           </li>
-          <li
-            className={`nav-item ${location.pathname === '/feedback' ? 'active' : ''}`}
-          >
+          <li className={`nav-item ${location.pathname === '/feedback' ? 'active' : ''}`}>
             <Link to="/feedback" className="nav-link">Feedback</Link>
           </li>
-          <li
-            className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
-          >
-            <Link to="/profile" className="nav-link">Profile</Link>
+          <li className="nav-item">
+            <span onClick={handleLogout} className="nav-link" style={{ cursor: 'pointer' }}>
+              Logout
+            </span>
           </li>
         </ul>
       </div>
@@ -41,8 +42,8 @@ const NavbarPatient = ({ navbarColor, logoUrl }) => {
 };
 
 NavbarPatient.propTypes = {
-  navbarColor: PropTypes.string,  // Allows the user to customize the navbar color
-  logoUrl: PropTypes.string,      // Allows the user to specify a custom logo
+  navbarColor: PropTypes.string,
+  logoUrl: PropTypes.string,
 };
 
 export default NavbarPatient;

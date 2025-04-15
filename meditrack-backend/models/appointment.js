@@ -30,6 +30,22 @@ const appointmentSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  pdfReport: {
+    file: { 
+      type: String,
+      validate: {
+        validator: function(v) {
+          // Basic PDF validation (first 6 chars should be 'JVBERi')
+          return !v || v.startsWith('JVBERi');
+        },
+        message: 'Uploaded file is not a valid PDF'
+      }
+    },
+    uploadedAt: {
+      type: Date,
+      default: null
+    }
+  },
   report: {
     type: String,
     default: null
@@ -54,68 +70,79 @@ const appointmentSchema = new mongoose.Schema({
 
 
 
-// 🧠 Middleware to auto-fill doctorName and patientName
-appointmentSchema.pre("save", async function (next) {
-  if (!this.isModified("doctor") && !this.isModified("patient")) {
-    return next(); // Skip if doctor/patient not modified
-  }
-
-  try {
-    const doctor = await Doctor.findById(this.doctor);
-    const patient = await Patient.findById(this.patient);
-
-    if (doctor) this.doctorName = doctor.name;
-    if (patient) this.patientName = patient.name;
-
-    next();
-  } catch (err) {
-    console.error("❌ Error populating names in appointment:", err.message);
-    next(err);
-  }
-});
-
-// Add new appointment to patient's appointment list & set activeAppointment
 appointmentSchema.post("save", async function (doc, next) {
   try {
+    // Auto-fill doctorName and patientName
+    const [doctor, patient] = await Promise.all([
+      Doctor.findById(doc.doctor),
+      Patient.findById(doc.patient),
+    ]);
+
+    if (doctor && !doc.doctorName) doc.doctorName = doctor.name;
+    if (patient && !doc.patientName) doc.patientName = patient.name;
+
+    // Build the appointment entry
     const appointmentEntry = {
       date: doc.currentAppointmentDate,
       status: doc.isActive ? "upcoming" : "past",
       appointmentId: doc._id
     };
 
-    await Patient.findByIdAndUpdate(doc.patient, {
+    // Prepare update payload
+    const update = {
       $push: { appointments: appointmentEntry },
-      $set: { activeAppointment: doc._id }
-    });
+      $set: {}
+    };
 
+    // Always update activeAppointment (if active)
+    if (doc.isActive) {
+      update.$set.activeAppointment = doc._id;
+    }
+
+    // Assign doctor if patient is new and unassigned
+    if (patient && patient.isNew && !patient.doctor) {
+      update.$set.doctor = doc.doctor;
+    }
+
+    // Mark isNew = false if this is the 2nd appointment
+    if (patient && patient.appointments.length >= 1) {
+      update.$set.isNew = false;
+    }
+
+    // Clear activeAppointment if this appointment is now inactive
+    if (!doc.isActive && patient?.activeAppointment?.toString() === doc._id.toString()) {
+      update.$set.activeAppointment = null;
+    }
+
+    // Apply update
+    await Patient.findByIdAndUpdate(doc.patient, update);
     next();
   } catch (err) {
-    console.error("❌ Error updating patient's appointment list:", err.message);
+    console.error("❌ Unified middleware error:", err.message);
     next(err);
   }
 });
-
-// Clear activeAppointment if appointment becomes inactive
-appointmentSchema.post("save", async function (doc, next) {
+appointmentSchema.pre("save", async function (next) {
   try {
-    if (!doc.isActive) {
-      const patient = await Patient.findById(doc.patient);
-  
-      console.log("Checking if activeAppointment should be cleared");
-  
-      if (patient && patient.activeAppointment?.toString() === doc._id.toString()) {
-        patient.activeAppointment = null;
-        await patient.save();
-        console.log("✅ Cleared activeAppointment for patient", patient._id);
-      }
+    // Auto-fill doctorName and patientName
+    if (!this.doctorName) {
+      const doctor = await Doctor.findById(this.doctor);
+      if (doctor) this.doctorName = doctor.name;
+    }
+
+    if (!this.patientName) {
+      const patient = await Patient.findById(this.patient);
+      if (patient) this.patientName = patient.name;
     }
 
     next();
   } catch (err) {
-    console.error("❌ Error clearing activeAppointment:", err.message);
+    console.error("❌ Error in pre-save hook:", err.message);
     next(err);
   }
 });
+
+
 
 // Export Appointment model and router
 const Appointment = mongoose.model("Appointment", appointmentSchema);

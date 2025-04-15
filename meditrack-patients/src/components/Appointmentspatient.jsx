@@ -1,38 +1,99 @@
 import { useEffect, useState } from 'react';
-import { fetchPatientAppointments } from '../apiService';
+import { fetchPatientAppointments, fetchPatient } from '../apiService';
 import NavbarPatient from './Navbarpatient';
 import '../App.css';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 
 const Appointmentspatient = ({ patientId }) => {
   const [appointments, setAppointments] = useState([]);
   const [activeAppointment, setActiveAppointment] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
+  const [patientInfo, setPatientInfo] = useState(null);
 
+  // Update the useEffect in Appointmentspatient.jsx
   useEffect(() => {
-    const storedId = patientId || localStorage.getItem('patientId');
-    if (!storedId) {
-      console.warn("⚠️ No patientId available to fetch appointments.");
-      return;
-    }
-
-    const getAppointments = async () => {
+    const loadData = async () => {
       try {
-        const data = await fetchPatientAppointments(storedId);
-        setAppointments(data);
-        const active = data.find(appt => appt.isActive);
-        setActiveAppointment(active || null);
+        // 1. Get patient ID from localStorage
+        const patientId = localStorage.getItem('patientId');
+        if (!patientId) {
+          console.error("No patientId found in localStorage");
+          return;
+        }
+
+        // 2. Fetch fresh patient data (with populated appointments)
+        const patientData = await fetchPatient(patientId);
+        if (!patientData) {
+          console.error("Failed to fetch patient data");
+          return;
+        }
+        setPatientInfo(patientData);
+
+        // 3. Process appointments
+        const processedAppointments = await Promise.all(
+          (patientData.appointments || []).map(async (appt) => {
+            // If appointment is just an ID, fetch full details
+            if (typeof appt === 'string') {
+              try {
+                return await fetchPatientAppointments(appt);
+              } catch (err) {
+                console.error(`Failed to fetch appointment ${appt}:`, err);
+                return null;
+              }
+            }
+            return appt;
+          })
+        );
+
+        setAppointments(processedAppointments.filter(Boolean));
+
+        // 4. Handle active appointment
+        if (patientData.activeAppointment) {
+          const fullAppointments = await fetchPatientAppointments(patientId);
+          const activeAppt = fullAppointments.find(appt =>
+            appt._id === patientData.activeAppointment._id ||
+            appt._id === patientData.activeAppointment
+          );
+          setActiveAppointment(activeAppt);
+        }
+
       } catch (error) {
-        console.error('❌ Failed to load appointments:', error);
+        console.error("Appointment loading error:", error);
       }
     };
 
-    getAppointments();
-  }, [patientId]);
+    loadData();
+  }, []);
 
   const handleDownload = (appointment) => {
-    alert(`Download report for appointment with Dr. ${appointment.doctor?.name}`);
+    if (!appointment?.pdfReport?.file) {
+      toast.error("No PDF report available for this appointment.");
+      return;
+    }
+  
+    const base64Data = appointment.pdfReport.file;
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+  
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+  
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Appointment_Report_${appointment._id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  
+    toast.success("PDF report downloaded successfully!");
   };
-
   const toggleExpand = (id, field) => {
     setExpandedItems(prev => ({
       ...prev,
@@ -43,23 +104,35 @@ const Appointmentspatient = ({ patientId }) => {
     }));
   };
 
+  // Helper function to format appointment date
+  const formatAppointmentDate = (date) => {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleString();
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
   return (
     <>
       <NavbarPatient />
       <div className="patientappointments-container">
-        <h1 className="appointments-title">All Appointments!</h1>
+        <h1 className="appointments-title">
+          {patientInfo?.name ? `${patientInfo.name}'s Appointments` : 'All Appointments!'}
+        </h1>
 
         <div className="appointments-main">
-          {/* Left: All Appointments */}
+          {/* Left: All Appointments from patient's appointments field */}
           <div className="appointments-list">
             {appointments.length === 0 ? (
               <p>No appointments found.</p>
             ) : (
               appointments.map((appt) => (
-                <div key={appt._id} className="appointment-card">
-                  <p><strong>Doctor:</strong> Dr. {appt.doctor?.name || 'N/A'}</p>
-                  <p><strong>Date:</strong> {new Date(appt.currentAppointmentDate).toLocaleString()}</p>
-                  
+                <div key={appt._id || appt.appointmentId} className="appointment-card">
+                  <p><strong>Doctor:</strong> Dr. {patientInfo.doctor?.name || 'N/A'}</p>
+                  <p><strong>Date:</strong> {formatAppointmentDate(appt.date || appt.currentAppointmentDate)}</p>
+
                   <div className="action-buttons">
                     <button 
                       className="view-btn"
@@ -80,13 +153,12 @@ const Appointmentspatient = ({ patientId }) => {
                       Download Report
                     </button>
                   </div>
-
-                  {expandedItems[appt._id]?.report && (
+                  {expandedItems[appt._id || appt.appointmentId]?.report && (
                     <div className="expanded-content">
                       <strong>Report:</strong> {appt.report || 'Null'}
                     </div>
                   )}
-                  {expandedItems[appt._id]?.notes && (
+                  {expandedItems[appt._id || appt.appointmentId]?.notes && (
                     <div className="expanded-content">
                       <strong>Notes:</strong> {appt.notes || 'Null'}
                     </div>
@@ -96,20 +168,17 @@ const Appointmentspatient = ({ patientId }) => {
             )}
           </div>
 
-          {/* Right: Active Appointment */}
+          {/* Right: Active Appointment from patient's activeAppointment field */}
           <div className="active-appointment-section">
             {activeAppointment ? (
               <div className="active-appointment-card">
                 <h2>Active Appointment</h2>
-                <p><strong>Doctor:</strong> Dr. {activeAppointment.doctor?.name}</p>
-                <p><strong>Date:</strong> {new Date(activeAppointment.currentAppointmentDate).toLocaleString()}</p>
-                <p><strong>Notes:</strong> {activeAppointment.notes || 'Null'}</p>
-                <button 
-                  className="download-btn" 
-                  onClick={() => handleDownload(activeAppointment)}
-                >
-                  Download Report
-                </button>
+                <p><strong>Doctor:</strong> Dr. {activeAppointment.doctor?.name || 'N/A'}</p>
+                <p><strong>Date:</strong> {formatAppointmentDate(activeAppointment.date || activeAppointment.currentAppointmentDate)}</p>
+                <p><strong>Status:</strong> Processing...</p>
+                {activeAppointment.notes && (
+                  <p><strong>Notes:</strong> {activeAppointment.notes}</p>
+                )}
               </div>
             ) : (
               <div className="active-appointment-card">

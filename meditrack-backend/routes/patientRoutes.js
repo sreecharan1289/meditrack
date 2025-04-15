@@ -60,12 +60,28 @@ router.post("/add-multiple", async (req, res) => {
     res.status(500).json({ message: "Error adding patients", error: error.message });
   }
 });
+router.patch('/:id', async (req, res) => {
+  try {
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedPatient);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating patient", error: error.message });
+  }
+});
 
 // 🔽 Move this route LAST
 router.get("/:id", async (req, res) => {
-  console.log("Fetching patient with ID:", req.params.id);
   try {
-    const patient = await Patient.findById(req.params.id).populate("doctor");
+    const patient = await Patient.findById(req.params.id)
+      .populate({
+        path: 'doctor',
+        select: 'name specialization' // Only get necessary fields
+      });
+      
     if (!patient) {
       return res.status(404).json({ message: "Patient not found" });
     }

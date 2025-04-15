@@ -53,35 +53,61 @@ router.get("/active/doctor/:doctorId", async (req, res) => {
       });
     }
   });
+// PATCH /api/patients/:id from inside appointmentRoutes.js
+router.patch('/patients/:id', async (req, res) => {
+  try {
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedPatient);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating patient", error: error.message });
+  }
+});
+
   // Create a new appointment
+  // Correct add route
 router.post('/add', async (req, res) => {
-    try {
-      const { patient, doctor, currentAppointmentDate } = req.body;
-  
-      const newAppointment = new Appointment({
-        patient,
-        doctor,
-        currentAppointmentDate,
-      });
-  
-      const savedAppointment = await newAppointment.save();
-      res.status(201).json(savedAppointment);
-    } catch (err) {
-      console.error('Error saving appointment:', err);
-      res.status(500).json({ error: 'Server error' });
+  try {
+    const { patient, doctor, currentAppointmentDate } = req.body;
+
+    if (!currentAppointmentDate || isNaN(new Date(currentAppointmentDate))) {
+      return res.status(400).json({ error: 'Invalid date format' });
     }
-  });
+
+    const newAppointment = new Appointment({
+      patient,
+      doctor,
+      currentAppointmentDate: new Date(currentAppointmentDate),
+      isActive: true
+    });
+
+    const savedAppointment = await newAppointment.save();
+    return res.status(201).json(savedAppointment); // ✅ proper JSON response
+  } catch (err) {
+    console.error('Error saving appointment:', err);
+    return res.status(500).json({ error: 'Server error' }); // ✅ proper error format
+  }
+});
+
 
   // Get appointments by patient ID
-router.get('/patient/:patientId', async (req, res) => {
-    try {
-      const appointments = await Appointment.find({ patient: req.params.patientId });
-      res.json(appointments);
-    } catch (err) {
-      console.error('❌ Error fetching appointments:', err.message);
-      res.status(500).json({ error: 'Failed to fetch appointments' });
-    }
-  });
+// In appointmentRoutes.js, update the population for patient appointments
+router.get("/patient/:patientId", async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ patient: req.params.patientId })
+      .populate({
+        path: 'doctor',
+        select: 'name specialization' // Only get necessary fields
+      })
+      .sort({ currentAppointmentDate: -1 });
+    res.status(200).json(appointments);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching appointments", error: err.message });
+  }
+});
 
 // 2️⃣ Get appointments where isActive=true AND isReportGenerated=false
 router.get("/pending-reports", async (req, res) => {
