@@ -27,9 +27,6 @@ const NavbarPatient = ({ navbarColor, logoUrl }) => {
           <li className={`nav-item ${location.pathname === '/appointmentspatient' ? 'active' : ''}`}>
             <Link to="/appointmentspatient" className="nav-link">Appointments</Link>
           </li>
-          <li className={`nav-item ${location.pathname === '/feedback' ? 'active' : ''}`}>
-            <Link to="/feedback" className="nav-link">Feedback</Link>
-          </li>
           <li className="nav-item">
             <span onClick={handleLogout} className="nav-link" style={{ cursor: 'pointer' }}>
               Logout

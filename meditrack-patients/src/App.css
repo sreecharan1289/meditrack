@@ -543,7 +543,15 @@ form .button input:hover {
 
 .dashboard-content {
   padding: 30px;
-  padding-top: 450px; /* Adjust this based on actual navbar height */
+  transition: padding-top 0.3s ease;
+}
+
+.content-centered {
+  padding-top: 430px;
+}
+
+.content-default {
+  padding-top: 100px;
 }
 
 
@@ -565,21 +573,22 @@ form .button input:hover {
 
 .appointment-tiles {
   display: flex;
+  justify-content: center;  /* center a single tile */
   flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-  margin-left: 0.5rem;
-  justify-content: flex-start;
+  gap: 1rem;
 }
 
 .appointment-tile {
-  background-color: #ffffff;
-  padding: 1.5rem;
-  border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  width: 300px;
-  text-align: center;
+  max-width: 300px;
+  width: 100%;
+  min-height: 220px;
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: #fff;
 }
+
 
 .appointment-tile h3 {
   margin-bottom: 0.5rem;
@@ -596,7 +605,7 @@ form .button input:hover {
   border-radius: 5px;
   border: 1px solid #ccc;
   margin-bottom: 1rem;
-  width: 100%;
+  width: 95%;
 }
 
 .appointment-tile button {
@@ -778,4 +787,48 @@ form .button input:hover {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.active-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1a1a; /* almost black */
+  text-align: center;
+  margin: 1.5rem 0;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
 
+
+/* Animated Box Styles */
+.animated-box-container {
+  perspective: 1000px;
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.animated-box {
+  background-color: #8fdcf1;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  animation: floatBox 2.5s ease-in-out infinite;
+  transition: transform 0.3s;
+  width: fit-content;
+  margin: 2rem auto;
+}
+
+@keyframes floatBox {
+  0% {
+    transform: translateY(0) perspective(600px) rotateX(0deg);
+  }
+  50% {
+    transform: translateY(-5px) perspective(600px) rotateX(2deg);
+  }
+  100% {
+    transform: translateY(0) perspective(600px) rotateX(0deg);
+  }
+}

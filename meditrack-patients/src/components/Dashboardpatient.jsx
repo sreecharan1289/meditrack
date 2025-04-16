@@ -123,13 +123,17 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <NavbarPatient navbarColor="#649cac" logoUrl={logo} />
-      <div className="dashboard-content">
+      <div className={`dashboard-content ${
+  patientInfo?.activeAppointment || patientInfo?.doctor ? 'content-default' : 'content-centered'
+}`}>
+
         <h1 className="left-aligned-heading">
           Hello, {patientInfo?.name || "Patient"}!
         </h1>
         {patientInfo?.activeAppointment ? (
           <div className="active-appointment-message">
-            <h2>You have an active appointment running.</h2>
+            <h2 className='active-name'>You are Having an active appointment</h2>
+            <h2 className='animated-box box-name'>Please check the Appointments Tab</h2>
           </div>
         ) : (
           <>
