@@ -27,11 +27,14 @@ const NavbarPatient = ({ navbarColor, logoUrl }) => {
           <li className={`nav-item ${location.pathname === '/appointmentspatient' ? 'active' : ''}`}>
             <Link to="/appointmentspatient" className="nav-link">Appointments</Link>
           </li>
-          <li className="nav-item">
+          <li className={`nav-item ${location.pathname === '/profile' ? 'active' : ''}`}>
+            <Link to="/profile" className="nav-link">Profile</Link>
+          </li>
+          {/* <li className="nav-item">
             <span onClick={handleLogout} className="nav-link" style={{ cursor: 'pointer' }}>
               Logout
             </span>
-          </li>
+          </li> */}
         </ul>
       </div>
     </nav>

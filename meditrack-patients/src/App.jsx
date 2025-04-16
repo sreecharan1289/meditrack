@@ -5,6 +5,7 @@ import PatientFirst from './components/patientfirst';
 import NavBar from './components/Navbarpatient';
 import Appointmentspatient from './components/Appointmentspatient';
 import { ToastContainer } from 'react-toastify';
+import PatientProfile from './components/profilepatients';
 
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/" element={<NavBar />} />
         <Route path="/appointmentspatient" element={<Appointmentspatient />}/>
+        <Route path="/profile" element={<PatientProfile />} />
       </Routes>
     </Router>
   );

@@ -112,7 +112,33 @@ export const bookAppointment = async (appointmentData) => {
     throw new Error(error.message || 'Failed to book appointment');
   }
 };
+export const fetchPatientDetails = async (patientId) => {
+  try {
+      const response = await fetch(`${API_BASE}/patients/${patientId}`);
+      if (!response.ok) throw new Error("Failed to fetch patient details");
+      return await response.json();
+  } catch (error) {
+      console.error("Fetch Error:", error);
+      return null;
+  }
+};
 
+export const updatePatientDetails = async (patientId, updatedData) => {
+  try {
+      const response = await fetch(`${API_BASE}/patients/${patientId}`, {
+          method: "PUT",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedData),
+      });
+      if (!response.ok) throw new Error("Failed to update patient details");
+      return await response.json();
+  } catch (error) {
+      console.error("Update Error:", error);
+      return null;
+  }
+};
 export const fetchPatientAppointments = async (patientId) => {
   try {
     const response = await fetch(`${API_URL}/api/appointments/patient/${patientId}`, {
