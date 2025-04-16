@@ -81,6 +81,7 @@ router.get("/:id", async (req, res) => {
         path: 'doctor',
         select: 'name specialization' // Only get necessary fields
       });
+
       
     if (!patient) {
       return res.status(404).json({ message: "Patient not found" });

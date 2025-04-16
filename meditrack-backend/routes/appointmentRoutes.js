@@ -122,6 +122,11 @@ router.get("/pending-reports", async (req, res) => {
         res.status(500).json({ message: "Error fetching pending report appointments", error: err.message });
     }
 });
+router.get("/:id", async (req, res) => {
+  const appt = await Appointment.findById(req.params.id).populate("doctor patient");
+  res.json(appt);
+});
+
 
 module.exports = router;
 module.exports.Appointment = Appointment;

@@ -132,6 +132,18 @@ export const fetchPatientAppointments = async (patientId) => {
     throw new Error(error.message || 'Failed to load appointments');
   }
 };
+export const fetchAppointmentById = async (appointmentId) => {
+  try {
+    const response = await fetch(`${API_URL}/api/appointments/${appointmentId}`, {
+      headers: getAuthHeaders()
+    });
+    return await handleResponse(response);
+  } catch (error) {
+    console.error(`Failed to fetch appointment ${appointmentId}`, error);
+    return null;
+  }
+};
+
 
 export const fetchPatient = async (patientId) => {
   try {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchPatientAppointments, fetchPatient } from '../apiService';
+import { fetchPatientAppointments, fetchPatient, fetchAppointmentById} from '../apiService';
 import NavbarPatient from './Navbarpatient';
 import '../App.css';
 import { toast } from 'react-toastify';
@@ -32,20 +32,18 @@ const Appointmentspatient = ({ patientId }) => {
         setPatientInfo(patientData);
 
         // 3. Process appointments
-        const processedAppointments = await Promise.all(
-          (patientData.appointments || []).map(async (appt) => {
-            // If appointment is just an ID, fetch full details
-            if (typeof appt === 'string') {
-              try {
-                return await fetchPatientAppointments(appt);
-              } catch (err) {
-                console.error(`Failed to fetch appointment ${appt}:`, err);
-                return null;
-              }
-            }
-            return appt;
-          })
-        );
+        const fullAppointments = await fetchPatientAppointments(patientId);
+        
+        // Process appointments to ensure consistent structure
+        const processedAppointments = fullAppointments.map(appt => ({
+          ...appt,
+          _id: appt._id || appt.appointmentId, // Ensure we have _id
+          date: appt.date || appt.currentAppointmentDate,
+          report: appt.report || null,
+          notes: appt.notes || null,
+          pdfReport: appt.pdfReport || null,
+          isReportGenerated: appt.isReportGenerated || false
+        }));
 
         setAppointments(processedAppointments.filter(Boolean));
 
@@ -67,33 +65,6 @@ const Appointmentspatient = ({ patientId }) => {
     loadData();
   }, []);
 
-  const handleDownload = (appointment) => {
-    if (!appointment?.pdfReport?.file) {
-      toast.error("No PDF report available for this appointment.");
-      return;
-    }
-  
-    const base64Data = appointment.pdfReport.file;
-    const byteCharacters = atob(base64Data);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-  
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-  
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Appointment_Report_${appointment._id}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  
-    toast.success("PDF report downloaded successfully!");
-  };
   const toggleExpand = (id, field) => {
     setExpandedItems(prev => ({
       ...prev,
@@ -113,6 +84,50 @@ const Appointmentspatient = ({ patientId }) => {
       return 'Invalid Date';
     }
   };
+  const openPdfFromBase64 = (base64String) => {
+    const byteCharacters = atob(base64String);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "application/pdf" });
+
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, "_blank");
+  };
+  const downloadPdfFromBase64 = (base64String, filename = "report.pdf") => {
+    try {
+      if (!base64String) {
+        toast.error("No PDF data found.");
+        return;
+      }
+  
+      const byteCharacters = atob(base64String);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+  
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+  
+      toast.success("PDF downloaded successfully!");
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      toast.error("Failed to download PDF report.");
+    }
+  };
 
   return (
     <>
@@ -130,28 +145,36 @@ const Appointmentspatient = ({ patientId }) => {
             ) : (
               appointments.map((appt) => (
                 <div key={appt._id || appt.appointmentId} className="appointment-card">
-                  <p><strong>Doctor:</strong> Dr. {patientInfo.doctor?.name || 'N/A'}</p>
+                  <p><strong>Doctor:</strong> {patientInfo.doctor?.name || 'N/A'}</p>
                   <p><strong>Date:</strong> {formatAppointmentDate(appt.date || appt.currentAppointmentDate)}</p>
 
                   <div className="action-buttons">
-                    <button 
-                      className="view-btn"
-                      onClick={() => toggleExpand(appt._id, 'report')}
-                    >
-                      {expandedItems[appt._id]?.report ? 'Hide Report' : 'View Report'}
-                    </button>
+                  {appt.isReportGenerated && appt.pdfReport?.file ? (
+                        <button
+                          onClick={() => openPdfFromBase64(appt.pdfReport.file)}
+                          className="view-btn"
+                        >
+                          View Report
+                        </button>
+                      ) : (
+                        <p><em>No Report Available</em></p>
+                      )}
                     <button 
                       className="view-btn"
                       onClick={() => toggleExpand(appt._id, 'notes')}
                     >
                       {expandedItems[appt._id]?.notes ? 'Hide Notes' : 'View Notes'}
                     </button>
-                    <button 
-                      className="download-btn" 
-                      onClick={() => handleDownload(appt)}
-                    >
-                      Download Report
-                    </button>
+                    {appt.isReportGenerated && appt.pdfReport?.file ? (
+                        <button
+                          onClick={() => downloadPdfFromBase64(appt.pdfReport.file)}
+                          className="view-btn"
+                        >
+                          Download Report
+                        </button>
+                      ) : (
+                        <p><em>No Report Available</em></p>
+                      )}
                   </div>
                   {expandedItems[appt._id || appt.appointmentId]?.report && (
                     <div className="expanded-content">
